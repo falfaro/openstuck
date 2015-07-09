@@ -59,6 +59,7 @@ def _keystonecreds():
 	keystoneinfo['password']    = os.environ['OS_PASSWORD']
 	keystoneinfo['auth_url']    = os.environ['OS_AUTH_URL']
 	keystoneinfo['tenant_name'] = os.environ['OS_TENANT_NAME']
+	keystoneinfo['cacert']      = os.environ['OS_CACERT']
 	return keystoneinfo
 
 def _novacreds():
@@ -1641,7 +1642,9 @@ class Openstuck():
 				flavor2 = os.environ('OS_NOVA_FLAVOR2')
 				flavor2 = nova.flavors.find(name=flavor2)
 			server.resize(flavor2)
-			o._available(nova.servers, server.id, timeout, status='RESIZE')
+			o._available(nova.servers, server.id, timeout, status='VERIFY_RESIZE')
+			server.confirm_resize()
+			o._available(nova.servers, server.id, timeout, status='ACTIVE')
 			results = 'OK'
 		except Exception as error:
 			errors.append('Grow_Server')
@@ -1999,9 +2002,7 @@ class Openstuck():
 				output.append(['nova', 'Migrate_Server', 'N/A', 'N/A', '0', results,])
 			return
 		try:
-			server.live_migrate()
-			o._available(nova.servers, server.id, timeout, status='VERIFY_RESIZE')
-			server.confirm_resize()
+			server.live_migrate(block_migration=True)
 			o._available(nova.servers, server.id, timeout, status='ACTIVE')
 			results = 'OK'
 		except Exception as error:
@@ -2108,7 +2109,9 @@ class Openstuck():
 		try:
 			flavor1 = nova.flavors.find(name="%s-flavor1" % self.project)
 			server.resize(flavor1)
-			o._available(nova.servers, server.id, timeout, status='RESIZE')
+			o._available(nova.servers, server.id, timeout, status='VERIFY_RESIZE')
+			server.confirm_resize()
+			o._available(nova.servers, server.id, timeout, status='ACTIVE')
 			results = 'OK'
 		except Exception as error:
 			errors.append('Shrink_Server')
